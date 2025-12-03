@@ -30,3 +30,29 @@ func (fe FieldElement) Equal(other *FieldElement) bool {
 	}
 	return fe.num == other.num && fe.prime == other.prime
 }
+
+func (fe FieldElement) Add(other *FieldElement) (*FieldElement, error) {
+	if other == nil {
+		return nil, fmt.Errorf("other field element is required")
+	}
+
+	if other.prime != fe.prime {
+		return nil, fmt.Errorf("cannot add field elements with different primes: %d vs %d", fe.prime, other.prime)
+	}
+
+	res := (fe.num + other.num) % fe.prime
+	return NewFieldElement(res, fe.prime) 
+}
+
+func (fe FieldElement) Subtract(other *FieldElement) (*FieldElement, error) {
+	if other == nil {
+		return nil, fmt.Errorf("other field element is required")
+	}
+
+	if other.prime != fe.prime {
+		return nil, fmt.Errorf("cannot subtract field elements with different primes: %d vs %d", fe.prime, other.prime)
+	}
+
+	res := (fe.num - other.num) % fe.prime
+	return NewFieldElement(res, fe.prime) 
+}
