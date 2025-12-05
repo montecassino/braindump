@@ -63,12 +63,27 @@ func (fe FieldElement) Multiply(other *FieldElement) (*FieldElement, error) {
 	return NewFieldElement(res, fe.prime) 
 }
 
-func (fe FieldElement) Pow(power uint) (*FieldElement, error) {
+func (fe FieldElement) Pow(exp int) (*FieldElement, error) {
+	if fe.num == 0 {
+		if exp <= 0 {
+			return nil, fmt.Errorf("undefined: 0^%d (non-positive exponent on zero)", exp)
+		}
+		// 0^positive = 0
+		return NewFieldElement(0, fe.prime)
+	}
+
+	pMinus1 := fe.prime - 1
+
+	n := exp % pMinus1
+	if n < 0 {
+		n += pMinus1
+	}
+
 	base := big.NewInt(int64(fe.num))
-	exp := big.NewInt(int64(power))
+	power := big.NewInt(int64(n))
 	mod := big.NewInt(int64(fe.prime))
-	
-	res := new(big.Int).Exp(base, exp, mod)
+	res := new(big.Int).Exp(base, power, mod)
+
 	return NewFieldElement(int(res.Int64()), fe.prime)
 }
 
@@ -76,25 +91,17 @@ func (fe FieldElement) Divide(other *FieldElement) (*FieldElement, error) {
 	if other == nil {
 		return nil, fmt.Errorf("other field element is required")
 	}
-
-	if other.prime != fe.prime {
-		return nil, fmt.Errorf("cannot multiply field elements with different primes: %d vs %d", fe.prime, other.prime)
+	if fe.prime != other.prime {
+		return nil, fmt.Errorf("cannot divide field elements with different primes: %d vs %d", fe.prime, other.prime)
 	}
-
 	if other.num == 0 {
-		return nil, fmt.Error("division by zero")
+		return nil, fmt.Errorf("division by zero")
 	}
 
-	exponent := uint(fe.prime - 2)
-	inverse, err := other.Pow(exponent)
-    if err != nil {
-        return nil, fmt.Errorf("failed to compute inverse: %w", err)
-    }
-
-	product, err := fe.Multiply(inverse)
+	// a / b = a * b^(-1)
+	inverse, err := other.Pow(-1) // Now works correctly!
 	if err != nil {
-        return nil, fmt.Errorf("multiplication failed: %w", err)
-    }
-
-    return result, nil
+		return nil, err
+	}
+	return fe.Multiply(inverse)
 }
