@@ -17,10 +17,30 @@ func main() {
 	jobs := make(chan int, len(imageIDs))
 
 	results := make(chan Image, len(imageIDs))
-	
+
+	var wg sync.WaitGroup
+
+	for i := 1; i <= 3; i++ {
+		wg.Add(1)
+		go worker(i, jobs, results, &wg)
+	}
+
+	for id := range imageIDs {
+		jobs <- id
+	}
+
+	close(jobs)
+
+	go func() {
+        wg.Wait()
+        close(results)
+    }()
+
 	for res := range results {
 		fmt.Printf("Saved Thumbnail for Image %d at %s\n", res.ID, res.Path)
 	}
+
+	fmt.Println("All images processed.")
 }
 
 
